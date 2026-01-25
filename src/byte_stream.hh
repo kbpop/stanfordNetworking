@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <deque>
 
 class Reader;
 class Writer;
@@ -20,11 +21,16 @@ public:
 
   void set_error() { error_ = true; };       // Signal that the stream suffered an error.
   bool has_error() const { return error_; }; // Has the stream had an error?
+  bool add_data(char val);
 
 protected:
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
   uint64_t capacity_;
+  std::string buffer;
   bool error_ {};
+  bool closed = false;
+  uint64_t bytes_pu = 0;
+  uint64_t bytes_po = 0;
 };
 
 class Writer : public ByteStream

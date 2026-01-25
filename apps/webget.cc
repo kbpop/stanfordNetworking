@@ -35,10 +35,13 @@ void get_URL( const string& host, const string& path )
   // // 4. /enter
   socket.write(enter);
 
-  string buffer;
-  // listen to server response
-  socket.read(buffer);
-  std::cout << buffer << std::endl;
+while(!socket.eof()){
+    // listen to server response
+    string buffer;
+    socket.read(buffer);
+    cout << buffer;
+  }
+  return;
 }
 } // namespace
 
