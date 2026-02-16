@@ -1,23 +1,20 @@
 #pragma once
 
-#include <set>
+#include <string>
+#include <map>
 #include "byte_stream.hh"
 
 class Reassembler
 {
 
-private:
-
-  // currentIndex
-  int currentIndex;
-  // set of future messages
-  std::set<std::pair<int,char>> s;
-
 public:
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ), currentIndex(0) {
-    std::set<std::pair<int,char>> s;
-  }
+  
+  uint64_t size;
+  uint64_t current_index;
+  std::map<uint64_t, std::string> m;
+
+  explicit Reassembler( ByteStream&& output ) : size(0), current_index(0), m{}, output_( std::move( output ) ) {}
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
@@ -40,6 +37,10 @@ public:
    * The Reassembler should close the stream after writing the last byte.
    */
   void insert( uint64_t first_index, std::string data, bool is_last_substring );
+
+  void add_stream( std::string data);
+  void add_store( std::string data, uint64_t index);
+  void check_store();
 
   // How many bytes are stored in the Reassembler itself?
   // This function is for testing only; don't add extra state to support it.
