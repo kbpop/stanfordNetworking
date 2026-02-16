@@ -6,41 +6,8 @@ using namespace std;
 
 
 
-void Reassembler::_insert( uint64_t first_index, string data, bool is_last_substring )
-{
-
-  uint64_t max_index = current_index + output_.writer().available_capacity();
-
-  if(is_last_substring && first_index + data.length() <= max_index){
-    eof_arrived = true;
-    eof_index = first_index + data.length();
-  }
-
-  // Filter initial data
-  if(first_index >= max_index || first_index + data.length() <= current_index){
-    if(!(first_index == current_index && data.empty() && is_last_substring)){
-      return;
-    }
-  }
-
- // make modifications to the string
-  if (first_index + data.length() > max_index){
-    data = data.substr(0, max_index - first_index);
-  } 
-
-  if(first_index < current_index){
-    data = data.substr(current_index - first_index);
-    first_index = current_index;
-  }
-  
-  // Add to store
-  uint64_t new_start = first_index; 
-  uint64_t new_end = first_index + data.length(); 
-  std::string new_data = data;
-
+void Reassembler::_check_left_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data ){
   auto it = m.lower_bound(new_start);
-
-  // check left overlapping strings
   if(it != m.begin()){
     auto prev_it = std::prev(it);
     uint64_t prev_start = prev_it->first; 
@@ -57,9 +24,10 @@ void Reassembler::_insert( uint64_t first_index, string data, bool is_last_subst
       }
     }
   }
+}
 
-  // check right overlapping strings
-  it = m.lower_bound(new_start);
+void Reassembler::_check_right_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data ){
+  auto it = m.lower_bound(new_start);
 
   while(it != m.end() && it->first <= new_end){
     uint64_t next_start = it->first;
@@ -71,17 +39,53 @@ void Reassembler::_insert( uint64_t first_index, string data, bool is_last_subst
     }
     it = m.erase(it);
   }
+}
 
+void Reassembler::_store( uint64_t first_index, string &data){
+  uint64_t new_start = first_index; 
+  uint64_t new_end = first_index + data.length(); 
+  std::string new_data = data;
+
+  _check_left_overlap(new_start, new_end, new_data);  
+  _check_right_overlap(new_start, new_end, new_data);  
   m[new_start] = new_data;
+}
 
-  // pop store if applicable
-  check_store();
+void Reassembler::_insert( uint64_t first_index, string &data, bool is_last_substring )
+{
+
+  uint64_t max_index = current_index + output_.writer().available_capacity();
+
+  if(is_last_substring && first_index + data.length() <= max_index){
+    eof_arrived = true;
+    eof_index = first_index + data.length();
+  }
+
+  // Filter initial data
+  if(first_index >= max_index || first_index + data.length() <= current_index){
+    if(!(first_index == current_index && data.empty() && is_last_substring)){
+      return;
+    }
+  }
+
+ // truncate string for corresponding capacity 
+  if (first_index + data.length() > max_index){
+    data = data.substr(0, max_index - first_index);
+  } 
+
+// push the string up to where current index is
+  if(first_index < current_index){
+    data = data.substr(current_index - first_index);
+    first_index = current_index;
+  }
   
+  // Add to store
+  _store(first_index, data);
 }
 
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring ){
   _insert(first_index, data, is_last_substring); 
-
+  check_store();
   if(eof_arrived && current_index >= eof_index){
     output_.writer().close();
   }
