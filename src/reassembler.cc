@@ -61,6 +61,10 @@ void Reassembler::_insert( uint64_t first_index, string &data, bool is_last_subs
     eof_index = first_index + data.length();
   }
 
+  if(data.empty()){
+    return;
+  }
+
   // Filter initial data
   if(first_index >= max_index || first_index + data.length() <= current_index){
     if(!(first_index == current_index && data.empty() && is_last_substring)){
@@ -81,14 +85,6 @@ void Reassembler::_insert( uint64_t first_index, string &data, bool is_last_subs
   
   // Add to store
   _store(first_index, data);
-}
-
-void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring ){
-  _insert(first_index, data, is_last_substring); 
-  check_store();
-  if(eof_arrived && current_index >= eof_index){
-    output_.writer().close();
-  }
 }
 
 void Reassembler::add_stream(std::string data){
@@ -113,6 +109,14 @@ void Reassembler::check_store(){
       }
       m.erase(removal);
     }
+}
+
+void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring ){
+  _insert(first_index, data, is_last_substring); 
+  check_store();
+  if(eof_arrived && current_index == eof_index){
+    output_.writer().close();
+  }
 }
 
 // How many bytes are stored in the Reassembler itself?
