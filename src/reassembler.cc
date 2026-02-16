@@ -9,9 +9,17 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
 
   uint64_t max_index = current_index + output_.writer().available_capacity();
 
+  if(is_last_substring && first_index + data.length() <= max_index){
+    eof_arrived = true;
+    eof_index = first_index + data.length();
+  }
+
   // Filter initial data
   if(first_index >= max_index || first_index + data.length() <= current_index){
     if(!(first_index == current_index && data.empty() && is_last_substring)){
+      if(eof_arrived && current_index == eof_index){
+        output_.writer().close();
+      }
       return;
     }
   }
@@ -78,20 +86,20 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
 }
 
 void Reassembler::add_stream(std::string data){
-    int end = std::min(output_.writer().available_capacity(), data.length());
+    size_t end = std::min(output_.writer().available_capacity(), data.length());
     output_.writer().push(data.substr(0, end));
     current_index += end;
 }
 
 void Reassembler::add_store(std::string data, uint64_t index){
-    int end = std::min(output_.writer().available_capacity(), data.length());
+    size_t end = std::min(output_.writer().available_capacity(), data.length());
     m[index] = data.substr(0, end);
 }
 
 void Reassembler::check_store(){
     while(m.find(current_index) != m.end() && output_.writer().available_capacity() > 0){
-      int removal = current_index;
-      if(output_.writer().available_capacity() > m[current_index].length()){
+      uint64_t removal = current_index;
+      if(output_.writer().available_capacity() >= m[current_index].length()){
         add_stream(m[current_index]);
       } else {
         m[current_index + output_.writer().available_capacity()] = m[current_index].substr(output_.writer().available_capacity());
