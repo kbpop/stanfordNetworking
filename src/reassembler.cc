@@ -29,7 +29,7 @@ void Reassembler::_check_right_overlap( uint64_t &new_start, uint64_t &new_end, 
 {
   auto it = m.lower_bound(new_start);
 
-  while(it != m.end() && it->first <= new_end){
+  while(it != m.end() && it->first < new_end){
     uint64_t next_start = it->first;
     uint64_t next_end = next_start + it->second.length();
 
@@ -43,9 +43,14 @@ void Reassembler::_check_right_overlap( uint64_t &new_start, uint64_t &new_end, 
 
 void Reassembler::_store( uint64_t first_index, string &data)
 {
+  if(data.empty()){
+    return;
+  }
+
   uint64_t new_start = first_index; 
   uint64_t new_end = first_index + data.length(); 
   std::string new_data = data;
+  
 
   if(_check_left_overlap(new_start, new_end, new_data)) return;
   _check_right_overlap(new_start, new_end, new_data);  
@@ -98,14 +103,17 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     }
 
     // Add to store
-    _store(first_index, data);
+    if(!data.empty()){
+      _store(first_index, data);
+    }
   }
 
   check_store();
 
-  if(eof_arrived && current_index == eof_index){
+  if(eof_arrived && current_index >= eof_index){
     output_.writer().close();
   }
+  count_bytes_pending();
 }
 
 // How many bytes are stored in the Reassembler itself?
@@ -114,6 +122,7 @@ uint64_t Reassembler::count_bytes_pending() const
 {
   uint64_t count = 0;
   for (const auto& pair: m){
+    std::cerr << "first: " << pair.first << ", string: " << pair.second << std::endl;
     count += pair.second.length();
   }
   return count;
