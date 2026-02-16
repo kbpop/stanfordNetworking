@@ -20,7 +20,7 @@ public:
   uint64_t current_index;
   std::map<uint64_t, std::string> m;
   bool eof_arrived;
-  bool eof_index;
+  uint64_t eof_index;
 
   explicit Reassembler( ByteStream&& output ) : size(0), current_index(0), m{},eof_arrived(false), eof_index(0), output_( std::move( output ) ) {}
 
