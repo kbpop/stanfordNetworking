@@ -1,12 +1,23 @@
 #pragma once
 
+#include <set>
 #include "byte_stream.hh"
 
 class Reassembler
 {
+
+private:
+
+  // currentIndex
+  int currentIndex;
+  // set of future messages
+  std::set<std::pair<int,char>> s;
+
 public:
   // Construct Reassembler to write into given ByteStream.
-  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ) {}
+  explicit Reassembler( ByteStream&& output ) : output_( std::move( output ) ), currentIndex(0) {
+    std::set<std::pair<int,char>> s;
+  }
 
   /*
    * Insert a new substring to be reassembled into a ByteStream.
