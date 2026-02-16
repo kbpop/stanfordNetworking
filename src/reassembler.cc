@@ -4,8 +4,6 @@
 
 using namespace std;
 
-
-
 bool Reassembler::_check_left_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data ){
   auto it = m.lower_bound(new_start);
   if(it != m.begin()){
@@ -54,46 +52,11 @@ void Reassembler::_store( uint64_t first_index, string &data)
   m[new_start] = new_data;
 }
 
-void Reassembler::_insert( uint64_t first_index, string &data, bool is_last_substring )
-{
-  uint64_t max_index = current_index + output_.writer().available_capacity();
-
-  if(is_last_substring && first_index + data.length() <= max_index){
-    eof_arrived = true;
-    eof_index = first_index + data.length();
-  }
-
-  // Filter initial data
-  if(data.empty() || first_index >= max_index || first_index + data.length() <= current_index){
-    return ;
-  }
-
- // truncate string for corresponding capacity 
-  if (first_index + data.length() > max_index){
-    data = data.substr(0, max_index - first_index);
-  } 
-
-// push the string up to where current index is
-  if(first_index < current_index){
-    data = data.substr(current_index - first_index);
-    first_index = current_index;
-  }
-  
-  // Add to store
-  _store(first_index, data);
-}
-
 void Reassembler::add_stream(std::string data)
 {
     size_t end = std::min(output_.writer().available_capacity(), data.length());
     output_.writer().push(data.substr(0, end));
     current_index += end;
-}
-
-void Reassembler::add_store(std::string data, uint64_t index)
-{
-    size_t end = std::min(output_.writer().available_capacity(), data.length());
-    m[index] = data.substr(0, end);
 }
 
 void Reassembler::check_store()
@@ -113,8 +76,33 @@ void Reassembler::check_store()
 }
 
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring ){
-  _insert(first_index, data, is_last_substring); 
+  uint64_t max_index = current_index + output_.writer().available_capacity();
+
+  if(is_last_substring){
+    eof_arrived = true;
+    eof_index = first_index + data.length();
+  }
+
+  // Filter initial data
+  if(!(data.empty() || first_index >= max_index || first_index + data.length() <= current_index)){
+
+  // truncate string for corresponding capacity 
+    if(first_index + data.length() > max_index){
+      data = data.substr(0, max_index - first_index);
+    } 
+
+    // push the string up to where current index is
+    if(first_index < current_index){
+      data = data.substr(current_index - first_index);
+      first_index = current_index;
+    }
+
+    // Add to store
+    _store(first_index, data);
+  }
+
   check_store();
+
   if(eof_arrived && current_index == eof_index){
     output_.writer().close();
   }
