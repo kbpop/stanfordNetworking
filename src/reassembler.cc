@@ -4,7 +4,9 @@
 
 using namespace std;
 
-void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring )
+
+
+void Reassembler::_insert( uint64_t first_index, string data, bool is_last_substring )
 {
 
   uint64_t max_index = current_index + output_.writer().available_capacity();
@@ -17,9 +19,6 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   // Filter initial data
   if(first_index >= max_index || first_index + data.length() <= current_index){
     if(!(first_index == current_index && data.empty() && is_last_substring)){
-      if(eof_arrived && current_index == eof_index){
-        output_.writer().close();
-      }
       return;
     }
   }
@@ -34,11 +33,6 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     first_index = current_index;
   }
   
-  if(is_last_substring){
-    eof_arrived = true;
-    eof_index = first_index + data.length();
-  }
-
   // Add to store
   uint64_t new_start = first_index; 
   uint64_t new_end = first_index + data.length(); 
@@ -46,6 +40,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
 
   auto it = m.lower_bound(new_start);
 
+  // check left overlapping strings
   if(it != m.begin()){
     auto prev_it = std::prev(it);
     uint64_t prev_start = prev_it->first; 
@@ -63,6 +58,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     }
   }
 
+  // check right overlapping strings
   it = m.lower_bound(new_start);
 
   while(it != m.end() && it->first <= new_end){
@@ -75,12 +71,18 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     }
     it = m.erase(it);
   }
+
   m[new_start] = new_data;
 
   // pop store if applicable
   check_store();
+  
+}
 
-  if(eof_arrived && current_index == eof_index){
+void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring ){
+  _insert(first_index, data, is_last_substring); 
+
+  if(eof_arrived && current_index >= eof_index){
     output_.writer().close();
   }
 }

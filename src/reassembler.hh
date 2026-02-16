@@ -7,6 +7,10 @@
 class Reassembler
 {
 
+private:
+  void _insert( uint64_t first_index, std::string data, bool is_last_substring );
+
+
 public:
   // Construct Reassembler to write into given ByteStream.
   
