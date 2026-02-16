@@ -6,7 +6,7 @@ using namespace std;
 
 
 
-void Reassembler::_check_left_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data ){
+bool Reassembler::_check_left_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data ){
   auto it = m.lower_bound(new_start);
   if(it != m.begin()){
     auto prev_it = std::prev(it);
@@ -16,7 +16,7 @@ void Reassembler::_check_left_overlap( uint64_t &new_start, uint64_t &new_end, s
     if(prev_end >= new_start){
       if(prev_end >= new_end){
         // swallows the entire string
-        return;
+        return true;
       } else {
         new_data = prev_it->second + new_data.substr(prev_end - new_start);
         new_start = prev_start; 
@@ -24,9 +24,11 @@ void Reassembler::_check_left_overlap( uint64_t &new_start, uint64_t &new_end, s
       }
     }
   }
+  return false;
 }
 
-void Reassembler::_check_right_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data ){
+void Reassembler::_check_right_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data )
+{
   auto it = m.lower_bound(new_start);
 
   while(it != m.end() && it->first <= new_end){
@@ -41,19 +43,19 @@ void Reassembler::_check_right_overlap( uint64_t &new_start, uint64_t &new_end, 
   }
 }
 
-void Reassembler::_store( uint64_t first_index, string &data){
+void Reassembler::_store( uint64_t first_index, string &data)
+{
   uint64_t new_start = first_index; 
   uint64_t new_end = first_index + data.length(); 
   std::string new_data = data;
 
-  _check_left_overlap(new_start, new_end, new_data);  
+  if(_check_left_overlap(new_start, new_end, new_data)) return;
   _check_right_overlap(new_start, new_end, new_data);  
   m[new_start] = new_data;
 }
 
 void Reassembler::_insert( uint64_t first_index, string &data, bool is_last_substring )
 {
-
   uint64_t max_index = current_index + output_.writer().available_capacity();
 
   if(is_last_substring && first_index + data.length() <= max_index){
@@ -61,15 +63,9 @@ void Reassembler::_insert( uint64_t first_index, string &data, bool is_last_subs
     eof_index = first_index + data.length();
   }
 
-  if(data.empty()){
-    return;
-  }
-
   // Filter initial data
-  if(first_index >= max_index || first_index + data.length() <= current_index){
-    if(!(first_index == current_index && data.empty() && is_last_substring)){
-      return;
-    }
+  if(data.empty() || first_index >= max_index || first_index + data.length() <= current_index){
+    return ;
   }
 
  // truncate string for corresponding capacity 
@@ -87,23 +83,28 @@ void Reassembler::_insert( uint64_t first_index, string &data, bool is_last_subs
   _store(first_index, data);
 }
 
-void Reassembler::add_stream(std::string data){
+void Reassembler::add_stream(std::string data)
+{
     size_t end = std::min(output_.writer().available_capacity(), data.length());
     output_.writer().push(data.substr(0, end));
     current_index += end;
 }
 
-void Reassembler::add_store(std::string data, uint64_t index){
+void Reassembler::add_store(std::string data, uint64_t index)
+{
     size_t end = std::min(output_.writer().available_capacity(), data.length());
     m[index] = data.substr(0, end);
 }
 
-void Reassembler::check_store(){
+void Reassembler::check_store()
+{
     while(m.find(current_index) != m.end() && output_.writer().available_capacity() > 0){
       uint64_t removal = current_index;
+      // push entire data
       if(output_.writer().available_capacity() >= m[current_index].length()){
         add_stream(m[current_index]);
       } else {
+      // Split data to appropriate stream
         m[current_index + output_.writer().available_capacity()] = m[current_index].substr(output_.writer().available_capacity());
         add_stream(m[current_index].substr(0, output_.writer().available_capacity()));
       }

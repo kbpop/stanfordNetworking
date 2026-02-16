@@ -10,7 +10,7 @@ class Reassembler
 private:
   void _insert( uint64_t first_index, std::string &data, bool is_last_substring );
   void _store( uint64_t first_index, std::string &data );
-  void _check_left_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data );
+  bool _check_left_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data );
   void _check_right_overlap( uint64_t &new_start, uint64_t &new_end, std::string &new_data );
 
 public:
