@@ -7,44 +7,75 @@ using namespace std;
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring )
 {
 
+  uint64_t max_index = current_index + output_.writer().available_capacity();
+
   // Unacceptable filter
-  if(first_index + data.length() > output_.writer().available_capacity() ){
+  if(first_index >= max_index || first_index + data.length() <= current_index){
     return;
+  }
+
+
+  if (first_index + data.length() > max_index){
+    data = data.substr(0, max_index - first_index);
+  } 
+
+  if(first_index < current_index){
+    data = data.substr(current_index - first_index);
+    first_index = current_index;
+  }
+  
+  if(is_last_substring){
+    eof_arrived = true;
+    eof_index = first_index + data.length();
   }
 
   // push to stream right away
-  if(first_index == current_index || (first_index < current_index && first_index + data.length() >= current_index)){
-
-    if(first_index != current_index){
-      data = data.substr(current_index - first_index);
-    }
-    
+  if(first_index == current_index){
     add_stream(data);
     check_store();
-
-  } else if (first_index > current_index){
-    // store data for later access
-
-    // Add to map
-    auto it = m.lower_bound(first_index);
-    uint64_t begin = 0; 
-  
-    if (it != m.end() && it->first < first_index + data.length()) { 
-      first_index = it->first + it->second.length();
-      begin = first_index - it->first;
-    } 
-
-    m[first_index] = data.substr(begin);
-    add_store(data, first_index);
-
   } else {
-    return;
-  }
+    // Add to store
+    uint64_t new_start = first_index; 
+    uint64_t new_end = first_index + data.length(); 
+    std::string new_data = data;
 
-  if(is_last_substring){
+    auto it = m.lower_bound(new_start);
+
+    if(it != m.begin()){
+      auto prev_it = std::prev(it);
+      uint64_t prev_start = prev_it->first; 
+      uint64_t prev_end = prev_it->first + prev_it->second.length(); 
+      
+      if(prev_end >= new_start){
+        if(prev_end >= new_end){
+          // swallows the entire string
+          return;
+        } else {
+          new_data = prev_it->second + new_data.substr(prev_end - new_start);
+          new_start = prev_start; 
+          m.erase(prev_it);
+        }
+      }
+    }
+
+    it = m.lower_bound(new_start);
+
+    while(it != m.end() && it->first <= new_end){
+      uint64_t next_start = it->first;
+      uint64_t next_end = next_start + it->second.length();
+
+      if(next_end > new_end){
+        new_data += it->second.substr(new_end - next_start);
+        new_end = next_end;
+      }
+      it = m.erase(it);
+    }
+    m[new_start] = new_data;
+  } 
+
+  if(eof_arrived && current_index == eof_index){
     output_.writer().close();
   }
-
 }
 
 void Reassembler::add_stream(std::string data){
@@ -74,5 +105,9 @@ void Reassembler::check_store(){
 // This function is for testing only; don't add extra state to support it.
 uint64_t Reassembler::count_bytes_pending() const
 {
-  return m.size();
+  uint64_t count = 0;
+  for (const auto& pair: m){
+    count += pair.second.length();
+  }
+  return count;
 }
