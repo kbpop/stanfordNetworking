@@ -47,7 +47,6 @@ public:
   void insert( uint64_t first_index, std::string data, bool is_last_substring );
 
   void add_stream( std::string data);
-  void add_store( std::string data, uint64_t index);
   void check_store();
 
   // How many bytes are stored in the Reassembler itself?

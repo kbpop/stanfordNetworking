@@ -57,6 +57,9 @@ void Reassembler::_store( uint64_t first_index, string &data)
   m[new_start] = new_data;
 }
 
+/*
+Add data to the stream if space is available
+*/
 void Reassembler::add_stream(std::string data)
 {
     size_t end = std::min(output_.writer().available_capacity(), data.length());
