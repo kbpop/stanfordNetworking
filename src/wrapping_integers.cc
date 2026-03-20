@@ -1,5 +1,6 @@
 #include "wrapping_integers.hh"
 #include "debug.hh"
+#include <cmath>
 
 using namespace std;
 
@@ -24,21 +25,20 @@ uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
   // Your code here.
   debug( "unimplemented unwrap( {}, {} ) called", zero_point.raw_value_, checkpoint );
   uint64_t n = checkpoint / UINT32_MAX;
-  uint64_t lower = (n - 1) * UINT32_MAX + zero_point.raw_value_;
 
   if(n == 0){
-    return UINT32_MAX + zero_point.raw_value_;
+    return checkpoint + 1;
   }
 
-  for(int i = 0; i < 3; i++){
-    if(checkpoint > lower || checkpoint < (lower + (UINT32_MAX >> 1)) ){
-      break;
-    }
+  uint64_t lower = (n - 1) * UINT32_MAX + zero_point.raw_value_;
+  uint64_t mid = n  * UINT32_MAX + zero_point.raw_value_;
+  uint64_t upper = (n + 1) * UINT32_MAX + zero_point.raw_value_;
 
-    lower += UINT32_MAX;
-  }
+  uint64_t l = (checkpoint > lower) ? checkpoint - lower: (lower - checkpoint);
+  uint64_t m = (checkpoint > mid) ? checkpoint - mid: (mid - checkpoint);
+  uint64_t u = (checkpoint > upper) ? checkpoint - upper: (upper - checkpoint);
 
-  return lower;
+  return std::min(l, std::min(m, u));
 
   // return {};
 }
