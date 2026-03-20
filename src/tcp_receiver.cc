@@ -18,16 +18,16 @@ void TCPReceiver::receive( TCPSenderMessage message )
   if(!initial){ return; }
 
   // add data to stream
-  reassembler_.insert((message.seqno).unwrap(*initial, 0), message.payload, message.FIN);
+  reassembler_.insert((message.seqno).unwrap(*initial, writer().bytes_pushed()), message.payload, message.FIN);
 }
 
 TCPReceiverMessage TCPReceiver::send() const
 {
   uint16_t max= ~0;
   if(initial){
-    uint32_t ack = (*initial).unwrap(*initial, writer().bytes_pushed() + 1);
+    Wrap32 ack((uint64_t)((*initial).unwrap(*initial, writer().bytes_pushed() + 1)), initial);
     TCPReceiverMessage back = {
-      .ackno = Wrap32{ack},
+      .ackno = ack,
       .window_size = (max > writer().available_capacity()) ? (uint16_t)writer().available_capacity() : max,
       .RST = false
     };
