@@ -18,7 +18,7 @@ void TCPReceiver::receive( TCPSenderMessage message )
   if(!initial){ return; }
 
   // add data to stream
-  reassembler_.insert((*initial).unwrap(*initial, 0), message.payload, message.FIN);
+  reassembler_.insert((message.seqno).unwrap(*initial, 0), message.payload, message.FIN);
 }
 
 TCPReceiverMessage TCPReceiver::send() const
