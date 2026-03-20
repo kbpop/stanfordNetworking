@@ -24,21 +24,25 @@ uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
 {
   // Your code here.
   debug( "unimplemented unwrap( {}, {} ) called", zero_point.raw_value_, checkpoint );
-  uint64_t n = checkpoint / UINT32_MAX;
+  uint64_t max = (uint64_t)1 << 32;
+  uint64_t n = checkpoint / max;
 
   if(n == 0){
     return checkpoint + 1;
   }
 
-  uint64_t lower = (n - 1) * UINT32_MAX + zero_point.raw_value_;
-  uint64_t mid = n  * UINT32_MAX + zero_point.raw_value_;
-  uint64_t upper = (n + 1) * UINT32_MAX + zero_point.raw_value_;
+  uint64_t lower = (n - 1) * max + zero_point.raw_value_;
+  uint64_t mid = n * max + zero_point.raw_value_;
+  uint64_t upper = (n + 1) * max + zero_point.raw_value_;
 
   uint64_t l = (checkpoint > lower) ? checkpoint - lower: (lower - checkpoint);
   uint64_t m = (checkpoint > mid) ? checkpoint - mid: (mid - checkpoint);
   uint64_t u = (checkpoint > upper) ? checkpoint - upper: (upper - checkpoint);
 
-  return std::min(l, std::min(m, u));
+  uint64_t cand = std::min(l, std::min(m, u));
+
+  return cand * max + zero_point.raw_value_;
+
 
   // return {};
 }
