@@ -23,13 +23,22 @@ uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
 {
   // Your code here.
   debug( "unimplemented unwrap( {}, {} ) called", zero_point.raw_value_, checkpoint );
-  // uint64_t offset = UINT32_MAX;
-  // while (checkpoint > offset)
-  // {
-  //   offset = offset << 1;
-  //   offset += UINT32_MAX;
-  // }
+  uint64_t n = checkpoint / UINT32_MAX;
+  uint64_t lower = (n - 1) * UINT32_MAX + zero_point.raw_value_;
 
-  // return offset + (uint64_t)zero_point.raw_value_;
-  return {};
+  if(n == 0){
+    return UINT32_MAX + zero_point.raw_value_;
+  }
+
+  for(int i = 0; i < 3; i++){
+    if(checkpoint > lower || checkpoint < (lower + (UINT32_MAX >> 1)) ){
+      break;
+    }
+
+    lower += UINT32_MAX;
+  }
+
+  return lower;
+
+  // return {};
 }
