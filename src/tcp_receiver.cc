@@ -11,30 +11,31 @@ void TCPReceiver::receive( TCPSenderMessage message )
 
   // add the initial value 
   if(message.SYN){
-    initial = message.seqno.unwrap(message.seqno, 0);
+    initial = message.seqno;
   }
 
   // return nothing if no initial is set
   if(!initial){ return; }
 
   // add data to stream
-  reassembler_.insert(*initial, message.payload, message.FIN);
+  reassembler_.insert((*initial).unwrap(*initial, 0), message.payload, message.FIN);
 }
 
 TCPReceiverMessage TCPReceiver::send() const
 {
+  uint16_t max= ~0;
   if(initial){
-    uint32_t ack = *initial + writer().bytes_pushed() + 1;
+    uint32_t ack = (*initial).unwrap(*initial, writer().bytes_pushed() + 1);
     TCPReceiverMessage back = {
       .ackno = Wrap32{ack},
-      .window_size = (uint16_t)writer().available_capacity(),
+      .window_size = (max > writer().available_capacity()) ? (uint16_t)writer().available_capacity() : max,
       .RST = false
     };
     return back;
   }
 
   TCPReceiverMessage back = {
-      .window_size = (uint16_t)writer().available_capacity(),
+      .window_size = (max > writer().available_capacity()) ? (uint16_t)writer().available_capacity() : max,
       .RST = false
   };
   return back;

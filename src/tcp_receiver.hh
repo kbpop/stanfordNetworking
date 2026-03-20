@@ -27,5 +27,5 @@ public:
 
 private:
   Reassembler reassembler_;
-  std::optional<uint64_t> initial;
+  std::optional<Wrap32> initial;
 };
