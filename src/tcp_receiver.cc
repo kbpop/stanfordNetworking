@@ -12,7 +12,7 @@ void TCPReceiver::receive( TCPSenderMessage message )
   }
 
   // add the initial value 
-  if(message.SYN){
+  if(message.SYN && !initial){
     initial = message.seqno;
   }
 
@@ -21,12 +21,18 @@ void TCPReceiver::receive( TCPSenderMessage message )
 
   // add data to stream
   uint64_t abs_seq = (message.seqno).unwrap(*initial, writer().bytes_pushed() + 1);
+  if(abs_seq == 0 && !message.SYN){
+    return;
+  }
+
   uint64_t stream_idx = abs_seq + message.SYN - 1;
   reassembler_.insert(stream_idx, message.payload, message.FIN);
 }
 
 TCPReceiverMessage TCPReceiver::send() const
 {
+  bool is_error = reader().has_error() || writer().has_error();
+
   uint16_t max= ~0;
   if(initial){
     uint64_t abs_ack = writer().bytes_pushed() + 1 + (writer().is_closed() ? 1: 0);
@@ -34,16 +40,15 @@ TCPReceiverMessage TCPReceiver::send() const
     TCPReceiverMessage back = {
       .ackno = ack,
       .window_size = (max > writer().available_capacity()) ? (uint16_t)writer().available_capacity() : max,
-      .RST = false
+      .RST = is_error
     };
     return back;
   }
 
   TCPReceiverMessage back = {
       .window_size = (max > writer().available_capacity()) ? (uint16_t)writer().available_capacity() : max,
-      .RST = false
+      .RST = is_error
   };
   return back;
-
 }
 
