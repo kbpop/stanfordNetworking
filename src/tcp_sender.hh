@@ -3,16 +3,28 @@
 #include "byte_stream.hh"
 #include "tcp_receiver_message.hh"
 #include "tcp_sender_message.hh"
+#include <queue>
 
 #include <functional>
+
+struct TransmitMsg {
+  std::queue<TCPSenderMessage> q; 
+  TransmitMsg() 
+  : q()
+  {
+  }
+};
+
+
 
 class TCPSender
 {
 public:
   /* Construct TCP sender with given default Retransmission Timeout and possible ISN */
   TCPSender( ByteStream&& input, Wrap32 isn, uint64_t initial_RTO_ms )
-    : input_( std::move( input ) ), isn_( isn ), initial_RTO_ms_( initial_RTO_ms )
-  {}
+    : input_( std::move( input ) ), isn_( isn ), initial_RTO_ms_( initial_RTO_ms ), cur_RTO_ms(initial_RTO_ms), time_passed_ms(0),flightMsg(), retransmission_number(0), last_window_size(0), last_n(0), outstanding_seqnos_(0)
+  {
+  }
 
   /* Generate an empty TCPSenderMessage */
   TCPSenderMessage make_empty_message() const;
@@ -35,11 +47,18 @@ public:
   const Writer& writer() const { return input_.writer(); }
   const Reader& reader() const { return input_.reader(); }
   Writer& writer() { return input_.writer(); }
+  TCPSenderMessage StreamToMsg();
 
 private:
   Reader& reader() { return input_.reader(); }
-
   ByteStream input_;
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
+  uint64_t cur_RTO_ms;
+  uint64_t time_passed_ms;
+  TransmitMsg flightMsg;
+  uint64_t retransmission_number;
+  uint16_t last_window_size;
+  uint64_t last_n;
+  uint64_t outstanding_seqnos_;
 };
