@@ -1,5 +1,5 @@
 #include "debug.hh"
-#include "socket.hh"
+#include "tcp_minnow_socket.hh"
 
 #include <cstdlib>
 #include <iostream>
@@ -11,7 +11,7 @@ using namespace std;
 namespace {
 void get_URL( const string& host, const string& path )
 {
-  auto socket = TCPSocket();
+  auto socket = CS144TCPSocket();
 
   // Steps:
   // 1. telnet cs144.keithw.org http
@@ -34,13 +34,14 @@ void get_URL( const string& host, const string& path )
 
   // // 4. /enter
   socket.write(enter);
-
+  socket.shutdown(SHUT_WR);
 while(!socket.eof()){
     // listen to server response
     string buffer;
     socket.read(buffer);
     cout << buffer;
   }
+  socket.wait_until_closed();
   return;
 }
 } // namespace
