@@ -9,8 +9,10 @@
 
 struct TransmitMsg {
   std::queue<TCPSenderMessage> q; 
+  uint64_t acked_seqno_;
+  bool fin_sent;
   TransmitMsg() 
-  : q()
+  : q(), acked_seqno_(0), fin_sent(false)
   {
   }
 };
@@ -22,7 +24,7 @@ class TCPSender
 public:
   /* Construct TCP sender with given default Retransmission Timeout and possible ISN */
   TCPSender( ByteStream&& input, Wrap32 isn, uint64_t initial_RTO_ms )
-    : input_( std::move( input ) ), isn_( isn ), initial_RTO_ms_( initial_RTO_ms ), cur_RTO_ms(initial_RTO_ms), time_passed_ms(0),flightMsg(), retransmission_number(0), last_window_size(0), last_n(0), outstanding_seqnos_(0)
+    : input_( std::move( input ) ), isn_( isn ), initial_RTO_ms_( initial_RTO_ms ), cur_RTO_ms(initial_RTO_ms), time_passed_ms(0),flightMsg(), retransmission_number(0), last_window_size(1), last_n(0), outstanding_seqnos_(0)
   {
   }
 
@@ -47,7 +49,7 @@ public:
   const Writer& writer() const { return input_.writer(); }
   const Reader& reader() const { return input_.reader(); }
   Writer& writer() { return input_.writer(); }
-  TCPSenderMessage StreamToMsg();
+  TCPSenderMessage StreamToMsg(uint64_t t);
 
 private:
   Reader& reader() { return input_.reader(); }
