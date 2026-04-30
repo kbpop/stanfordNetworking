@@ -22,6 +22,11 @@ public:
     operator const sockaddr*() const;
     // NOLINTEND (*-explicit-*)
   };
+  bool operator<(const Address& other) const {
+    // Implement your comparison logic here. 
+    // For example, compare IP addresses or port numbers.
+    return this->ip() < other.ip(); // (Replace with your actual member variables)
+}
 
 private:
   socklen_t size_; //!< Size of the wrapped address.

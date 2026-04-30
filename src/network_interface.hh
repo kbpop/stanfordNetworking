@@ -6,6 +6,18 @@
 
 #include <memory>
 #include <queue>
+#include <map>
+#include <tuple>
+
+
+struct ArpPending {
+  size_t time; 
+  std::queue<InternetDatagram> q;
+
+  ArpPending(): time(0), q()
+  {
+  }
+};
 
 // A "network interface" that connects IP (the internet layer, or network layer)
 // with Ethernet (the network access layer, or link layer).
@@ -44,7 +56,7 @@ public:
   NetworkInterface( std::string_view name,
                     std::shared_ptr<OutputPort> port,
                     const EthernetAddress& ethernet_address,
-                    const Address& ip_address );
+                    const Address& ip_address);
 
   // Sends an Internet datagram, encapsulated in an Ethernet frame (if it knows the Ethernet destination
   // address). Will need to use [ARP](\ref rfc::rfc826) to look up the Ethernet destination address for the next
@@ -65,7 +77,6 @@ public:
   const OutputPort& output() const { return *port_; }
   OutputPort& output() { return *port_; }
   std::queue<InternetDatagram>& datagrams_received() { return datagrams_received_; }
-
 private:
   // Human-readable name of the interface
   std::string name_;
@@ -82,4 +93,8 @@ private:
 
   // Datagrams that have been received
   std::queue<InternetDatagram> datagrams_received_ {};
+  // use map from ethernet to 
+  std::map<Address, std::tuple<EthernetAddress, size_t>> ipToEthMap;
+  // need some way to track ARP request to IP address with timer
+  std::map<Address, ArpPending> arpPending;
 };
